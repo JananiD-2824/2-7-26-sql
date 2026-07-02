@@ -2,45 +2,62 @@ Hello janani, please upskill
 
 -- this is for windows function and 
 windows function in sql
---SQL window functions let you perform calculations across related rows without collapsing them into a single result, making them essential for analytics, ranking, and time-series queries. They rely on the OVER() clause, which defines the "window" of rows to operate on, often using PARTITION BY and ORDER BY.
+--SQL window functions let you perform calculations across related rows without collapsing them into a single result
+       ----makes seperate column
+       --, making them essential for analytics, ranking, and time-series queries. They rely on the OVER() clause, which defines the "window" of rows to operate on, often using PARTITION BY and ORDER BY.
 
 🔑 Key Concepts
-Window Function → A function like SUM(), AVG(), ROW_NUMBER(), RANK(), LEAD(), LAG().
+-- Window Function → A function like SUM(), AVG(), ROW_NUMBER(), RANK(), LEAD(), LAG().
 
-OVER() Clause → Defines the scope of rows (the "window").
-
-PARTITION BY → Groups rows (like mini GROUP BY).
-
-ORDER BY → Defines sequence inside each partition.
-
-Frame Clause → Fine-tunes the window (e.g., last 3 rows).
+-- OVER() Clause → Defines the scope of rows (the "window").
+-- PARTITION BY → Groups rows (like mini GROUP BY)
+-- ORDER BY → Defines sequence inside each partition
+-- Frame Clause → Fine-tunes the window (e.g., last 3 rows).
 
 📊 Types of Window Functions
-Category	Functions	Use Case	Example
-Aggregate	SUM, AVG, COUNT, MAX, MIN	Running totals, moving averages	SUM(Sales) OVER (PARTITION BY CustomerID ORDER BY OrderDate)
-Ranking	ROW_NUMBER, RANK, DENSE_RANK, NTILE	Leaderboards, top-N queries	RANK() OVER (ORDER BY Salary DESC)
-Value	LAG, LEAD, FIRST_VALUE, LAST_VALUE	Compare current row with previous/next	LAG(Sales,1) OVER (PARTITION BY CustomerID ORDER BY OrderDate)
-Distribution	PERCENT_RANK, CUME_DIST, NTILE	Percentiles, statistical analysis	PERCENT_RANK() OVER (ORDER BY Salary)
+Category	       Functions                            	Use Case	                            Example
+Aggregate        -- SUM, AVG, COUNT, MAX, MIN	       ----Running totals, moving averages	---SUM(Sales) OVER (PARTITION BY CustomerID ORDER BY OrderDate)
+Ranking          --ROW_NUMBER, RANK, DENSE_RANK, NTILE	--Leaderboards, top-N queries	        -- RANK() OVER (ORDER BY Salary DESC)
+Value	          --LAG, LEAD, FIRST_VALUE, LAST_VALUE	--Compare current row with previous/next	--LAG(Sales,1) OVER (PARTITION BY CustomerID ORDER BY OrderDate)
+Distribution	   --PERCENT_RANK, CUME_DIST, NTILE	--Percentiles, statistical analysis	--PERCENT_RANK() OVER (ORDER BY Salary)
 
 
-🛠️ Practical Examples
+1. SUM 
 Running Total per Customer
 
 sql
 SELECT CustomerID, OrderDate, Amount,
-       SUM(Amount) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS RunningTotal
+       SUM(Amount) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS RunningTotal  --when its saying partition by, data gets divided and the clauses calculated seperately
 FROM Orders;
 👉 Each customer’s purchases accumulate over time.
+--  ============= Key Point
+-- No ORDER BY inside the OVER() clause → The sum is calculated across the entire partition (all rows for each CustomerID), not progressively row by row.
 
-Ranking Employees by Salary
+-- That means every row for the same customer will show the same total.
+       --example 
+       SELECT OrderID, CustomerID, OrderDate, Amount,
+       SUM(Amount) OVER (PARTITION BY CustomerID) AS RunningTotal
+FROM Orders;  -- gives same total in all columns
 
-sql
-SELECT EmployeeID, Salary,
-       RANK() OVER (ORDER BY Salary DESC) AS SalaryRank
-FROM Employees;
-👉 Ties get the same rank, gaps appear in numbering.
+2. Ranking Employees by Salary
 
-Previous Order Amount (LAG)
+sqlSELECT OrderID, CustomerID, Amount,
+       RANK() OVER (PARTITION BY CustomerID ORDER BY Amount DESC) AS RankByAmount
+FROM Orders;
+--Result: 👉 Orders are ranked within each customer by purchase size.
+OrderID	CustomerID	Amount	RankByAmount
+2	A	200	       1
+1	A	100	       2
+4	A	50	       3
+5	B	300	       1
+3	B	150	       2
+
+-- When you use a ranking window function like RANK(), SQL needs a way to decide the order of rows inside each partition.
+
+       -- With ORDER BY → SQL sorts the rows within the partition by the specified column(s). Then it assigns ranks based on that order.
+       -- Without ORDER BY → There is no defined ordering. SQL treats all rows in the partition as if they are equal — essentially a giant tie.
+       
+3. Previous Order Amount (LAG)
 
 sql
 SELECT CustomerID, OrderDate, Amount,
